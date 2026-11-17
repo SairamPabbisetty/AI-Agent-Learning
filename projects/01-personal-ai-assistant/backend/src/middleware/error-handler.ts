@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import { sendApiError } from "../api-response.js";
+import { GeminiServiceError } from "../services/gemini.service.js";
 
 interface BodyParserError extends Error {
   status: number;
@@ -29,6 +30,11 @@ export const errorHandler: ErrorRequestHandler = (
 
   if (isBodyParserError(error) && error.type === "entity.too.large") {
     sendApiError(res, 413, "Request body is too large.");
+    return;
+  }
+
+  if (error instanceof GeminiServiceError) {
+    sendApiError(res, error.statusCode, error.message);
     return;
   }
 

@@ -24,5 +24,6 @@ The development server uses `http://localhost:5173`, which is allowed by the
 backend's default CORS configuration. Start the backend separately before
 sending messages.
 
-The chat uses `POST /api/dev/echo` for frontend/backend communication testing;
-it does not generate AI responses.
+The chat sends messages to the backend's `POST /api/chat` endpoint and displays
+Gemini's response. Configure the Gemini API key only in the backend `.env`
+file; it must never be added to the frontend.

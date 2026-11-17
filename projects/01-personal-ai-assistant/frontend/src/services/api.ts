@@ -2,7 +2,7 @@ const backendBaseUrl = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
 ).replace(/\/+$/, "");
 
-interface EchoSuccessResponse {
+interface MessageSuccessResponse {
   success: true;
   data: { message: string };
 }
@@ -11,7 +11,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isEchoSuccess(value: unknown): value is EchoSuccessResponse {
+function isMessageSuccess(value: unknown): value is MessageSuccessResponse {
   return (
     isRecord(value) &&
     value.success === true &&
@@ -38,8 +38,8 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-export async function echoMessage(message: string): Promise<string> {
-  const response = await fetch(`${backendBaseUrl}/api/dev/echo`, {
+async function postMessage(path: string, message: string): Promise<string> {
+  const response = await fetch(`${backendBaseUrl}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message }),
@@ -51,9 +51,17 @@ export async function echoMessage(message: string): Promise<string> {
     throw new Error(message ?? `The backend request failed (${response.status}).`);
   }
 
-  if (!isEchoSuccess(payload)) {
+  if (!isMessageSuccess(payload)) {
     throw new Error("The backend returned an unexpected response.");
   }
 
   return payload.data.message;
+}
+
+export async function chatMessage(message: string): Promise<string> {
+  return postMessage("/api/chat", message);
+}
+
+export async function echoMessage(message: string): Promise<string> {
+  return postMessage("/api/dev/echo", message);
 }

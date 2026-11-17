@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { sendApiError } from "../api-response.js";
+import { generateGeminiResponse } from "../services/gemini.service.js";
 
 const apiRouter = Router();
 
@@ -11,7 +12,7 @@ apiRouter.get("/health", (_req, res) => {
   });
 });
 
-function isEchoRequest(body: unknown): body is { message: string } {
+function isMessageRequest(body: unknown): body is { message: string } {
   return (
     typeof body === "object" &&
     body !== null &&
@@ -25,7 +26,7 @@ function isEchoRequest(body: unknown): body is { message: string } {
 apiRouter.post("/dev/echo", (req, res) => {
   const body: unknown = req.body;
 
-  if (!isEchoRequest(body)) {
+  if (!isMessageRequest(body)) {
     sendApiError(res, 400, "A non-empty string message is required.");
     return;
   }
@@ -33,6 +34,21 @@ apiRouter.post("/dev/echo", (req, res) => {
   res.status(200).json({
     success: true,
     data: { message: body.message },
+  });
+});
+
+apiRouter.post("/chat", async (req, res) => {
+  const body: unknown = req.body;
+
+  if (!isMessageRequest(body)) {
+    sendApiError(res, 400, "A non-empty string message is required.");
+    return;
+  }
+
+  const message = await generateGeminiResponse(body.message);
+  res.status(200).json({
+    success: true,
+    data: { message },
   });
 });
 

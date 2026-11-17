@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { echoMessage } from "./services/api";
+import { chatMessage } from "./services/api";
 import "./App.css";
 
 type MessageRole = "assistant" | "user";
@@ -18,7 +18,7 @@ function App() {
     {
       id: 0,
       role: "assistant",
-      content: "Hi! Send a message to test the connection to your backend.",
+      content: "Hi! Ask me something and Gemini will respond.",
     },
   ]);
   const [draft, setDraft] = useState("");
@@ -47,10 +47,10 @@ function App() {
     setIsSending(true);
 
     try {
-      const echoedMessage = await echoMessage(message);
+      const assistantMessage = await chatMessage(message);
       setMessages((currentMessages) => [
         ...currentMessages,
-        { id: nextMessageId++, role: "assistant", content: echoedMessage },
+        { id: nextMessageId++, role: "assistant", content: assistantMessage },
       ]);
     } catch (requestError) {
       setError(
@@ -85,7 +85,7 @@ function App() {
         </div>
         <span className="demo-badge">
           <span className="badge-dot" aria-hidden="true" />
-          Echo demo
+          Gemini chat
         </span>
       </header>
 
@@ -93,7 +93,7 @@ function App() {
         <div className="conversation-heading">
           <div>
             <h2>Conversation</h2>
-            <p>Messages are sent to your backend for testing.</p>
+            <p>Messages are sent to Gemini through your backend.</p>
           </div>
           <span className="conversation-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
@@ -140,7 +140,7 @@ function App() {
                 <span className="message-sender">Assistant</span>
                 <p className="message-bubble loading-message">
                   <span className="loading-indicator" aria-hidden="true" />
-                  Waiting for the backend…
+                  Waiting for Gemini…
                 </p>
               </div>
             </div>
@@ -188,8 +188,7 @@ function App() {
       </section>
 
       <footer className="app-footer">
-        This demo echoes messages through the backend. It does not generate AI
-        responses.
+        Messages are sent to Gemini through your backend.
       </footer>
     </main>
   );

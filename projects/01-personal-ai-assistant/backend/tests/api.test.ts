@@ -1,8 +1,24 @@
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../src/app.js";
 import { errorHandler } from "../src/middleware/error-handler.js";
+import {
+  GeminiServiceError,
+  generateGeminiResponse,
+} from "../src/services/gemini.service.js";
+
+vi.mock("../src/services/gemini.service.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../src/services/gemini.service.js")>();
+  return { ...actual, generateGeminiResponse: vi.fn() };
+});
+
+const mockGenerateGeminiResponse = vi.mocked(generateGeminiResponse);
+
+beforeEach(() => {
+  mockGenerateGeminiResponse.mockReset();
+});
 
 describe("GET /api/health", () => {
   it("returns backend health information", async () => {
@@ -51,6 +67,57 @@ describe("POST /api/dev/echo", () => {
       success: false,
       error: { message: "Request body contains invalid JSON." },
     });
+  });
+});
+
+describe("POST /api/chat", () => {
+  it("returns a generated response in a structured response", async () => {
+    mockGenerateGeminiResponse.mockResolvedValue("Playwright automates browsers.");
+
+    const response = await request(app)
+      .post("/api/chat")
+      .send({ message: "Explain Playwright in simple terms." });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      success: true,
+      data: { message: "Playwright automates browsers." },
+    });
+    expect(mockGenerateGeminiResponse).toHaveBeenCalledWith(
+      "Explain Playwright in simple terms.",
+    );
+  });
+
+  it.each([
+    ["missing", {}],
+    ["blank", { message: "   " }],
+    ["not a string", { message: 42 }],
+  ])("returns 400 for a %s message", async (_inputCase, body) => {
+    const response = await request(app).post("/api/chat").send(body);
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      error: { message: "A non-empty string message is required." },
+    });
+    expect(mockGenerateGeminiResponse).not.toHaveBeenCalled();
+  });
+
+  it("returns a sanitized 502 response when Gemini fails", async () => {
+    mockGenerateGeminiResponse.mockRejectedValue(
+      new GeminiServiceError(502, "Gemini service request failed."),
+    );
+
+    const response = await request(app)
+      .post("/api/chat")
+      .send({ message: "Hello" });
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({
+      success: false,
+      error: { message: "Gemini service request failed." },
+    });
+    expect(JSON.stringify(response.body)).not.toContain("GEMINI_API_KEY");
   });
 });
 
